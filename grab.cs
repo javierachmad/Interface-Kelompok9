@@ -15,7 +15,7 @@ namespace GrabApp.Core
         string DapatkanStatusPembayaran();
     }
 
-    // 2. ABSTRACT CLASS
+    // 2. ABSTRACT 
     // Kelas dasar untuk semua layanan (GrabRide, GrabFood, GrabExpress).
     // Tidak bisa dibuat objeknya secara langsung (harus lewat kelas turunan).
     public abstract class GrabService : IGrabPay
