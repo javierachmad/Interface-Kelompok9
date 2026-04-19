@@ -1,185 +1,121 @@
-﻿using GrabApp.Core;
+﻿using GrabApp;
 using System;
 
 namespace GrabApp.Core
 {
-    // ==========================================
-    // MATERI PERTEMUAN 07 (Abstraksi & Interface)
-    // ==========================================
-
-    // 1. INTERFACE
-    // Kontrak standar untuk semua layanan Grab agar mendukung pembayaran digital (OVO/Kartu).
-    public interface IGrabPay
+    public interface IGrabPayment
     {
-        bool ProsesPembayaran(decimal nominal);
-        string DapatkanStatusPembayaran();
+        void ProsesPembayaran(decimal jumlah);
     }
 
-    // 2. ABSTRACT 
-    // Kelas dasar untuk semua layanan (GrabRide, GrabFood, GrabExpress).
-    // Tidak bisa dibuat objeknya secara langsung (harus lewat kelas turunan).
-    public abstract class GrabService : IGrabPay
+    public abstract class GrabService : IGrabPayment
     {
-        public string BookingId { get; set; }
-        public string ServiceName { get; set; }
+        public string NamaLayanan { get; set; }
 
-        public GrabService(string id, string name)
+        public GrabService(string namaLayanan)
         {
-            BookingId = id;
-            ServiceName = name;
+            NamaLayanan = namaLayanan;
         }
 
-        // Abstract Method: Setiap layanan punya formula tarif yang berbeda.
-        public abstract decimal HitungTarif();
-
-        // Implementasi dari Interface IGrabPay
-        public bool ProsesPembayaran(decimal nominal)
+        public void TampilkanLayanan()
         {
-            Console.WriteLine($"[OVO/GrabPay] Saldo terpotong Rp{nominal} untuk layanan {ServiceName}.");
-            return true;
+            Console.WriteLine($"Layanan: {NamaLayanan}");
         }
 
-        public string DapatkanStatusPembayaran() => "Success";
+        public abstract decimal Tarif(int jumlah);
+
+        public void ProsesPembayaran(decimal jumlah)
+        {
+            Console.WriteLine($"Memproses pembayaran sebesar {jumlah} untuk layanan {NamaLayanan}");
+        }
     }
 
-    // KELAS TURUNAN KONKRET (Implementasi Abstract Class)
     public class GrabRide : GrabService
     {
-        public double JarakTempuhKm { get; set; }
-        private const decimal TarifPerKm = 3500;
-        private const decimal BiayaDasar = 4000; // Flag fall / biaya minimum
-
-        public GrabRide(string id, double jarak) : base(id, "GrabRide")
+        public GrabRide() : base("Grab Ride")
         {
-            JarakTempuhKm = jarak;
+
         }
 
-        public override decimal HitungTarif()
+        public override decimal Tarif(int jumlah)
         {
-            return BiayaDasar + ((decimal)JarakTempuhKm * TarifPerKm);
+            return jumlah * 5000;
         }
+
     }
 
-
-    // ==========================================
-    // MATERI PERTEMUAN 06 (Relasi Antar Objek)
-    // ==========================================
-
-    // Kelas Pendukung
-    public class Kendaraan
+    public class GrabCar : GrabService
     {
-        public string PlatNomor { get; set; }
-        public string TipeMobil { get; set; }
-        public Kendaraan(string plat, string tipe) { PlatNomor = plat; TipeMobil = tipe; }
+        public GrabCar() : base("Grab Car")
+        {
+        }
+        public override decimal Tarif(int jumlah)
+        {
+            return jumlah * 10000;
+        }
     }
 
-    // Kelas Mitra (Driver)
-    public class MitraGrab
+    public class Mitra
     {
         public string NamaMitra { get; set; }
 
-        // 3. AGREGASI (Has-A Relationship, Weak Tie)
-        // MitraGrab "punya" Kendaraan. Tapi jika akun Mitra dihapus/diblokir dari sistem,
-        // objek mobil/motor di dunia nyata tetap ada dan tidak ikut hancur.
-        public Kendaraan KendaraanOperasional { get; set; }
-
-        public MitraGrab(string nama, Kendaraan kendaraan)
+        public Mitra(string nama)
         {
             NamaMitra = nama;
-            KendaraanOperasional = kendaraan;
         }
 
         public void TerimaOrder(string namaPenumpang)
         {
-            Console.WriteLine($"[MITRA] {NamaMitra} menuju titik jemput {namaPenumpang} dengan {KendaraanOperasional.TipeMobil} ({KendaraanOperasional.PlatNomor}).");
+            Console.WriteLine($"[Mitra] {NamaMitra} sedang meluncur ke titik penjemputan {namaPenumpang}.");
         }
     }
 
-    // Kelas E-Receipt (Resi Elektronik)
-    public class EReceipt
-    {
-        public string Rincian { get; set; }
-        public DateTime WaktuTerbit { get; set; }
-
-        public EReceipt(string rincian)
-        {
-            Rincian = rincian;
-            WaktuTerbit = DateTime.Now;
-        }
-    }
-
-    // Kelas Booking (Pemesanan)
-    public class Booking
-    {
-        public GrabService Layanan { get; set; }
-
-        // 4. KOMPOSISI (Part-Of Relationship, Strong Tie)
-        // Booking "terdiri dari" EReceipt. Resi elektronik ini di-instansiasi DI DALAM
-        // pemesanan. Jika pemesanan dibatalkan (objek hancur), resi tidak akan pernah terbit.
-        private EReceipt _receipt;
-
-        public Booking(GrabService layanan)
-        {
-            Layanan = layanan;
-            // Instansiasi ketat (Strong tie)
-            _receipt = new EReceipt($"ID: {layanan.BookingId} | Layanan: {layanan.ServiceName}");
-        }
-
-        public void SelesaikanPerjalanan()
-        {
-            decimal totalTarif = Layanan.HitungTarif();
-            Layanan.ProsesPembayaran(totalTarif);
-
-            Console.WriteLine($"[E-RECEIPT] {_receipt.Rincian} | Total Tagihan: Rp{totalTarif} | Diterbitkan: {_receipt.WaktuTerbit}");
-        }
-    }
-
-    // Kelas Penumpang (User Aplikasi)
     public class Penumpang
     {
-        public string Nama { get; set; }
+        public string NamaPenumpang { get; set; }
 
-        public Penumpang(string nama) { Nama = nama; }
-
-        // 5. ASOSIASI (Uses-A Relationship)
-        // Penumpang "menggunakan" jasa MitraGrab. Keduanya adalah entitas mandiri yang 
-        // berdiri sendiri, tapi berinteraksi (berkirim pesan/memanggil metode) saat order terjadi.
-        public void PesanKendaraan(MitraGrab mitra, GrabRide layanan)
+        public Penumpang(string nama)
         {
-            Console.WriteLine($"\n[PENUMPANG] {Nama} membuat pesanan {layanan.ServiceName}...");
+            NamaPenumpang = nama;
+        }
 
-            // Asosiasi terjadi di sini (Penumpang berinteraksi dengan Mitra)
-            mitra.TerimaOrder(Nama);
+        public void PesanPerjalanan(Mitra driver, GrabService layanan, int jarak)
+        {
+            Console.WriteLine($"\n--- {NamaPenumpang} Membuat Pesanan ---");
 
-            // Menjalankan proses yang di dalamnya ada Komposisi
-            Booking perjalanan = new Booking(layanan);
-            perjalanan.SelesaikanPerjalanan();
+            // Menggunakan objek layanan
+            layanan.TampilkanLayanan();
+            decimal totalTarif = layanan.Tarif(jarak);
+
+            // Menggunakan objek Mitra
+            driver.TerimaOrder(NamaPenumpang);
+
+            // Mengeksekusi antarmuka pembayaran
+            layanan.ProsesPembayaran(totalTarif);
         }
     }
+
 }
 
 
 
-namespace GrabApp.ConsoleApp
+namespace GrabApp.Core
 {
     class Program
     {
         static void Main(string[] args)
         {
-            // 1. Setup Entitas yang Berdiri Sendiri
-            Kendaraan mobilAvanza = new Kendaraan("B 8899 GRS", "Toyota Avanza");
+            
             Penumpang penumpangRina = new Penumpang("Rina");
 
-            // 2. Terjadi Agregasi (Mobil di-assign ke Mitra)
-            MitraGrab mitraJoko = new MitraGrab("Pak Joko", mobilAvanza);
+           
+            Mitra mitraJoko = new Mitra("Pak Joko");
 
-            // 3. Polimorfisme menggunakan Abstract Class
-            // Rina memesan GrabRide dengan jarak 8.5 KM
-            GrabRide pesananRide = new GrabRide("GRB-2023X99", 8.5);
-
-            // 4. Terjadi Asosiasi & Komposisi
-            // Rina (Penumpang) berinteraksi dengan Pak Joko (Mitra)
-            penumpangRina.PesanKendaraan(mitraJoko, pesananRide);
+            
+            GrabRide pesananRide = new GrabRide();
+            penumpangRina.TampilkanLayanan(pesananRide);
+           
+            
 
             Console.ReadLine();
         }
