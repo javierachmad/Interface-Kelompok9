@@ -1,4 +1,5 @@
 ﻿using GrabApp;
+using GrabApp.Core;
 using System;
 
 namespace GrabApp.Core
@@ -97,27 +98,42 @@ namespace GrabApp.Core
 
 }
 
-
-
-namespace GrabApp.Core
+namespace GrabApp
 {
     class Program
     {
         static void Main(string[] args)
         {
-            
-            Penumpang penumpangRina = new Penumpang("Rina");
-
-           
-            Mitra mitraJoko = new Mitra("Pak Joko");
+            Console.WriteLine("=== Selamat Datang di GrabApp ===\n");
 
             
-            GrabRide pesananRide = new GrabRide();
-            penumpangRina.TampilkanLayanan(pesananRide);
-           
-            
+            Mitra driver1 = new Mitra("Budi Santoso");
+            Mitra driver2 = new Mitra("Andi Wijaya");
 
-            Console.ReadLine();
+            
+            GrabRide grabRide = new GrabRide();
+            GrabCar grabCar = new GrabCar();
+
+            
+            Penumpang penumpang1 = new Penumpang("Siti Rahayu");
+            Penumpang penumpang2 = new Penumpang("Rudi Hartono");
+
+            penumpang1.PesanPerjalanan(driver1, grabRide, 5);
+
+            
+            penumpang2.PesanPerjalanan(driver2, grabCar, 8);
+
+            
+            Console.WriteLine("\n--- Info Tarif ---");
+            Console.WriteLine($"Tarif GrabRide per 1 km : Rp {grabRide.Tarif(1):N0}");
+            Console.WriteLine($"Tarif GrabCar per 1 km  : Rp {grabCar.Tarif(1):N0}");
+
+            
+            Console.WriteLine("\n--- Pembayaran via Interface ---");
+            IGrabPayment pembayaran = new GrabRide();
+            pembayaran.ProsesPembayaran(25000);
+
+            Console.WriteLine("\n=== Terima kasih telah menggunakan GrabApp ===");
         }
     }
 }
